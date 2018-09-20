@@ -1,6 +1,9 @@
 rm test_result.txt
 touch test_result.txt
 
+#For dash or sh remove \n
+IFS=$'\n'
+
 echo "Programs installed:" >> test_result.txt
 /usr/local/bin/brew ls --versions mplayer ImageMagick gifsicle >> test_result.txt
 
@@ -16,10 +19,10 @@ do
 
 	dir="$(dirname "$f")"
 	echo "Directory: $dir" >> test_result.txt
-	
+
 	name="$(basename "$f")"
 	echo "File Name: $name\n" >> test_result.txt
-	
+
 
 	cd "$dir"
 
@@ -29,7 +32,7 @@ do
 	video_width=$(echo $video_properties | sed -e 's/.*\ID_VIDEO_WIDTH=\([0-9]*\).*/\1/')
 	video_height=$(echo $video_properties | sed -e 's/.*\ID_VIDEO_HEIGHT=\([0-9]*\).*/\1/')
 	aspect_ratio=$(echo "$video_width $video_height" | awk '{printf "%.5f", $1/$2}')
-	
+
 	echo "Video Width: $video_width" >> test_result.txt
 	echo "Video Height: $video_height" >> test_result.txt
 	echo "Aspect Ratio: $aspect_ratio\n" >> test_result.txt
@@ -43,7 +46,7 @@ do
 			final_height=$GIF_MAX_SIZE
 			final_width=$(echo "$final_height $aspect_ratio" | awk '{printf "%3.0f", $1/(1/$2)}')
 	fi
-	
+
 	echo "Final Width: $final_width" >> test_result.txt
 	echo "Final Height: $final_height\n" >> test_result.txt
 
@@ -55,23 +58,23 @@ do
 	fi
 
 	/usr/local/bin/mplayer -ao null -vo png:z=1:outdir=.temp -vf scale=$final_width:$final_height "$f"
-	
+
 	num_renders=$(ls -l .temp | wc -l)
 	#echo "mplayer renders successful." >> test_result.txt
 	echo "mplayer number of video frames: $num_renders.\n" >> test_result.txt
 
 	/usr/local/bin/convert +repage -fuzz 1.6% -delay 1.7 -loop 0 .temp/*.png -layers OptimizePlus -layers OptimizeTransparency .temp.gif
-	
+
 	file_size_imagemagick=$(wc -c .temp.gif)
 	#echo "ImageMagick convert successful." >> test_result.txt
 	echo "ImageMagick convert file size: $file_size_imagemagick\n" >> test_result.txt
 
 	/usr/local/bin/gifsicle -O3 --colors 256 .temp.gif > "${name%.*}.gif"
-	
+
 	file_size_gifsicle=$(wc -c "${name%.*}.gif")
 	#echo "gifsicle optimization successful." >> test_result.txt
 	echo "gifsicle optimization file size: $file_size_gifsicle\n" >> test_result.txt
-	
+
 	# Cleanup
 	rm -rf .temp
 	rm -rf .temp.gif
